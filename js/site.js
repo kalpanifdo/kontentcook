@@ -131,4 +131,19 @@
       filmWindow.style.setProperty('--my', ((event.clientY - rect.top) / rect.height * 100).toFixed(1) + '%');
     });
   }
+  // Kalpani's local time, so a visitor in another market can see at a glance
+  // whether it is a reasonable hour to expect a reply.
+  var clock = document.getElementById('localTime');
+  if (clock) {
+    try {
+      var timeFmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Colombo', hour: '2-digit', minute: '2-digit', hour12: false });
+      var tickClock = function () { clock.textContent = timeFmt.format(new Date()); };
+      tickClock();
+      setInterval(tickClock, 30000);
+    } catch (error) {
+      clock.closest('span').hidden = true;
+    }
+  }
+
+
 })();
