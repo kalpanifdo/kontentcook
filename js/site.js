@@ -45,6 +45,7 @@
   var targetTime = 0;
   var shownTime = 0;
   var scrollQueued = false;
+  var scrubbing = false;
 
   function formatTime(value) {
     var seconds = Math.max(0, Math.min(59, Math.floor(value)));
@@ -53,7 +54,7 @@
 
   function updateFilmTarget() {
     scrollQueued = false;
-    if (!desktop || reduced || !hero) return;
+    if (!scrubbing || reduced || !hero) return;
     var rect = hero.getBoundingClientRect();
     var travel = Math.max(1, rect.height - window.innerHeight);
     var progress = Math.max(0, Math.min(1, -rect.top / travel));
@@ -72,7 +73,11 @@
       if (ready) return;
       duration = film.duration || 8;
       ready = true;
-      if (desktop) {
+      // Scrubbing needs the hero to be taller than the viewport. It no longer
+      // is, so the film plays on a loop rather than being driven by scroll.
+      var travel = hero ? hero.getBoundingClientRect().height - window.innerHeight : 0;
+      if (desktop && travel > 120) {
+        scrubbing = true;
         film.pause();
         film.currentTime = .01;
         shownTime = .01;
@@ -88,7 +93,7 @@
     if (film.readyState >= 1) prepareFilm();
 
     (function scrubLoop() {
-      if (desktop && ready) {
+      if (scrubbing && ready) {
         shownTime += (targetTime - shownTime) * .16;
         if (!film.seeking && Math.abs(film.currentTime - shownTime) > .018) {
           try { film.currentTime = shownTime; } catch (error) {}
