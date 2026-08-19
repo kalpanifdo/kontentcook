@@ -242,3 +242,51 @@ ul,ol{padding:0;list-style:none}
   .service-grid{grid-template-columns:1fr}
   .service-card,.service-card:nth-child(4),.service-card:nth-child(5){grid-column:span 1}
 }
+
+/* ---------- cross-document view transitions ---------- */
+/* Opts every same-origin navigation into an animated transition. Browsers
+   without support just navigate normally — nothing to detect or polyfill. */
+@view-transition{navigation:auto}
+
+/* The chrome should stay put while the page underneath changes, otherwise it
+   cross-fades against itself and flickers. */
+.site-head{view-transition-name:site-head}
+
+/* Each service image is paired by name with the hero image on its own page, so
+   the card morphs into the hero instead of the pages cross-fading. Only one
+   pair can ever match per navigation, since each page carries just its own. */
+[data-vt="social-media"]{view-transition-name:vt-social-media}
+[data-vt="content-marketing"]{view-transition-name:vt-content-marketing}
+[data-vt="search-performance"]{view-transition-name:vt-search-performance}
+[data-vt="brand-consultancy"]{view-transition-name:vt-brand-consultancy}
+[data-vt="websites"]{view-transition-name:vt-websites}
+
+::view-transition-group(*){animation-duration:.42s;animation-timing-function:cubic-bezier(.22,1,.36,1)}
+::view-transition-old(root){animation:vt-out .3s cubic-bezier(.4,0,1,1) both}
+::view-transition-new(root){animation:vt-in .42s cubic-bezier(.22,1,.36,1) both}
+@keyframes vt-out{to{opacity:0}}
+@keyframes vt-in{from{opacity:0;transform:translateY(.75rem)}}
+
+@media(prefers-reduced-motion:reduce){
+  @view-transition{navigation:none}
+  ::view-transition-group(*),::view-transition-old(root),::view-transition-new(root){animation:none!important}
+}
+
+/* ---------- scroll-driven reveals (native) ---------- */
+/* Where the browser supports scroll timelines these run off the main thread and
+   the IntersectionObserver in site.js never starts. The hero film scrub stays
+   in JS regardless: animation-timeline drives CSS properties, and there is no
+   CSS way to set video.currentTime. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal{
+      opacity:0;transform:translateY(1.5rem);
+      animation:reveal-in linear both;
+      animation-timeline:view();
+      animation-range:entry 8% cover 30%;
+    }
+    /* Nothing left for JS to toggle. */
+    .reveal.is-visible{opacity:1;transform:none}
+  }
+}
+@keyframes reveal-in{to{opacity:1;transform:none}}

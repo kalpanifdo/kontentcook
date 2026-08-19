@@ -14,6 +14,17 @@
 
   if (year) year.textContent = new Date().getFullYear();
 
+  // Cross-document view transitions reject with AbortError when one is skipped
+  // — navigating again before the previous settles, for instance. Nothing here
+  // owns that promise, so it surfaces as an unhandled rejection. Swallow only
+  // this exact case; anything else still reaches the console.
+  window.addEventListener('unhandledrejection', function (event) {
+    var reason = event.reason;
+    if (reason && reason.name === 'AbortError' && /transition was skipped/i.test(reason.message || '')) {
+      event.preventDefault();
+    }
+  });
+
   function setMenu(open) {
     menuButton.classList.toggle('is-open', open);
     menuButton.setAttribute('aria-expanded', String(open));
@@ -26,8 +37,13 @@
   if (menuPanel) menuPanel.addEventListener('click', function (event) { if (event.target.closest('a')) setMenu(false); });
   document.addEventListener('keydown', function (event) { if (event.key === 'Escape') setMenu(false); });
 
+  // CSS scroll timelines handle .reveal natively where supported; only fall
+  // back to the observer when they are missing.
+  var cssTimeline = window.CSS && CSS.supports && CSS.supports('animation-timeline: view()');
   var reveals = document.querySelectorAll('.reveal');
-  if (reduced || !('IntersectionObserver' in window)) {
+  if (cssTimeline && !reduced) {
+    /* handled in CSS */
+  } else if (reduced || !('IntersectionObserver' in window)) {
     reveals.forEach(function (item) { item.classList.add('is-visible'); });
   } else {
     var observer = new IntersectionObserver(function (entries) {
